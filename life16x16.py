@@ -17,7 +17,7 @@ from random import randrange
 from Matrix16x16 import Matrix16x16 as M16
 
 UPDATE_RATE   = 1   # seconds
-PERCENT_FILL  = 10  # universe fill
+PERCENT_FILL  = 50  # universe fill
 NX = 16
 NY = 16
 
@@ -30,7 +30,7 @@ U = [[0 for x in xrange(NX)] for y in xrange(NY)]
 
 def createWorld(fill):
     """Let there be light."""
-    global universe
+    global U
     for i in xrange(int(0.01 * NX * NY * fill)):
         x = randrange(NX)
         y = randrange(NY)
@@ -46,18 +46,34 @@ def displayUniverse():
 
 def countNeighbors(x, y):
     """Return neighbor count."""
-    pass
-    # TODO
+    return  U[x-1][y-1] + U[x][y-1] + U[x+1][y-1] + \
+            U[x-1][y]   +             U[x+1][y]   + \
+            U[x-1][y+1] + U[x][y+1] + U[x+1][y+1]
 
 def updateUniverse():
     """Life goes on."""
-    for x in NX:
-        for y in NY:
-            n = countNeighbors(x,y)
-            # TODO
-            
+    UU = [[0 for x in xrange(NX)] for y in xrange(NY)]
+    for x in xrange(1,NX-2):
+        for y in xrange(1,NY-2):
+            UU[x][y] = U[x][y]
+            N = countNeighbors(x,y)
+            if UU[x][y]:
+                # live cell rules
+                if N < 2 or N > 3:
+                    UU[x][y] = 0
+            else:
+                # dead cell rules
+                if N == 3:
+                    UU[x][y] = 1
+    return UU
+
 createWorld(PERCENT_FILL)
+displayUniverse()
+sleep(UPDATE_RATE)
+
 while True:
+    U = updateUniverse()
     displayUniverse()
+    if not sum(row.count(1) for row in U):
+        exit('Universe died.')
     sleep(UPDATE_RATE)
-    updateUniverse()
