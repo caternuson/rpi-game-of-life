@@ -17,7 +17,7 @@ from random import randrange
 from Matrix16x16 import Matrix16x16 as M16
 
 UPDATE_RATE     = 0.1   # seconds
-MAX_GENS        = 200   # maximum nuber of steps (generations)
+MAX_GENS        = 200   # maximum number of steps (generations)
 PERCENT_FILL    = 50    # universe fill factor
 NX = 16
 NY = 16
@@ -27,7 +27,7 @@ m.begin()
 m.clear()
 
 # create darkness
-U = [[0 for x in xrange(NX)] for y in xrange(NY)]
+U = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
 generation = 0
 
 def createWorld(fill):
@@ -35,8 +35,8 @@ def createWorld(fill):
     global U, generation
     generation = 0
     for i in xrange(int(0.01 * NX * NY * fill)):
-        x = randrange(NX)
-        y = randrange(NY)
+        x = randrange(1,NX+1)
+        y = randrange(1,NY+1)
         U[x][y] = 1
 
 def displayUniverse():
@@ -44,7 +44,7 @@ def displayUniverse():
     m.clear()
     for x in xrange(NX):
         for y in xrange(NY):
-            m.set_pixel(x, y, U[x][y])
+            m.set_pixel(x, y, U[x+1][y+1])
     m.write_display()
 
 def countNeighbors(x, y):
@@ -55,9 +55,9 @@ def countNeighbors(x, y):
 
 def updateUniverse():
     """Life goes on."""
-    UU = [[0 for x in xrange(NX)] for y in xrange(NY)]
-    for x in xrange(1,NX-2):
-        for y in xrange(1,NY-2):
+    UU = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
+    for x in xrange(1,NX+1):
+        for y in xrange(1,NY+1):
             UU[x][y] = U[x][y]
             N = countNeighbors(x,y)
             if UU[x][y]:
