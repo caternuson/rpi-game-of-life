@@ -16,8 +16,9 @@ from random import randrange
 
 from Matrix16x16 import Matrix16x16 as M16
 
-UPDATE_RATE   = 1   # seconds
-PERCENT_FILL  = 50  # universe fill
+UPDATE_RATE     = 0.1   # seconds
+MAX_GENS        = 200   # maximum nuber of steps (generations)
+PERCENT_FILL    = 50    # universe fill factor
 NX = 16
 NY = 16
 
@@ -27,10 +28,12 @@ m.clear()
 
 # create darkness
 U = [[0 for x in xrange(NX)] for y in xrange(NY)]
+generation = 0
 
 def createWorld(fill):
     """Let there be light."""
-    global U
+    global U, generation
+    generation = 0
     for i in xrange(int(0.01 * NX * NY * fill)):
         x = randrange(NX)
         y = randrange(NY)
@@ -73,7 +76,12 @@ sleep(UPDATE_RATE)
 
 while True:
     U = updateUniverse()
-    displayUniverse()
     if not sum(row.count(1) for row in U):
-        exit('Universe died.')
+        print "Universe died at generation {0}.".format(generation)
+        createWorld(PERCENT_FILL)
+    if generation >= MAX_GENS:
+        print "Universe lived long enough, creating new one."
+        createWorld(PERCENT_FILL)
+    displayUniverse()
     sleep(UPDATE_RATE)
+    generation += 1
