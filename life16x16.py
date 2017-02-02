@@ -12,23 +12,52 @@
 # Carter Nelson
 #===============================================================================
 from time import sleep
+from datetime import datetime
 from random import randrange
+
+import Adafruit_GPIO.SPI as SPI
+import Adafruit_MCP3008
 
 from Matrix16x16 import Matrix16x16 as M16
 
-UPDATE_RATE     = 0.1   # seconds
-MAX_GENS        = 200   # maximum number of steps (generations)
+MIN_RATE        = 0.01  # fastest rate (secs)
+MAX_RATE        = 1.00  # slowest   "    "
+MIN_GENS        = 5     # minimum number of steps (generations)
+MAX_GENS        = 500   # maximum   "    "    "         "
 PERCENT_FILL    = 50    # universe fill factor
+RATE_KNOB       = 0
+GEN_KNOB        = 1
+
 NX = 16
 NY = 16
 
 m = M16()
 m.begin()
+m.set_brightness(15)
 m.clear()
+
+mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(0, 0))
 
 # create darkness
 U = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
 generation = 0
+
+def getKnobs():
+    """Return the raw ADC values of the 3 knobs."""
+    return (mcp.read_adc(0),mcp.read_adc(1),mcp.read_adc(2))
+
+def readGenKnob():
+    value = 1.0*mcp.read_adc(GEN_KNOB)
+    return int(MIN_GENS + (value/1024.0)*(MAX_GENS-MIN_GENS))
+
+def readRateKnob():
+    value = 1.0*mcp.read_adc(RATE_KNOB)
+    return MIN_RATE + (value/1024.0)*(MAX_RATE-MIN_RATE)
+
+def knobSleep():
+    start_wait = datetime.now()
+    while (datetime.now() - start_wait).total_seconds() < readRateKnob():
+            pass
 
 def createWorld(fill):
     """Let there be light."""
@@ -55,6 +84,8 @@ def countNeighbors(x, y):
 
 def updateUniverse():
     """Life goes on."""
+    global generation
+    generation += 1
     UU = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
     for x in xrange(1,NX+1):
         for y in xrange(1,NY+1):
@@ -70,18 +101,27 @@ def updateUniverse():
                     UU[x][y] = 1
     return UU
 
+# Bootstrap a new universe
 createWorld(PERCENT_FILL)
 displayUniverse()
-sleep(UPDATE_RATE)
+knobSleep()
 
 while True:
+    # Update the universe per the rules of the game of life
     U = updateUniverse()
+    
+    # Start over if universe is dead (no live cells)
     if not sum(row.count(1) for row in U):
         print "Universe died at generation {0}.".format(generation)
         createWorld(PERCENT_FILL)
-    if generation >= MAX_GENS:
-        print "Universe lived long enough, creating new one."
+        
+    # Start over if max generations reached
+    if generation >= readGenKnob():
+        print "Universe lived long enough at generation {0}.".format(generation)
         createWorld(PERCENT_FILL)
+        
+    # Display the current universe
     displayUniverse()
-    sleep(UPDATE_RATE)
-    generation += 1
+    
+    # Sleep
+    knobSleep()

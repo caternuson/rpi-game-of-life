@@ -27,5 +27,9 @@ class Matrix16x16():
             self.m1.set_pixel(x, y, value)
         elif y < 16:
             self.m2.set_pixel(x, y-8, value)
+
+    def set_brightness(self, brightness):
+        self.m1.set_brightness(brightness)
+        self.m2.set_brightness(brightness)
             
 # skipping other functions for now
