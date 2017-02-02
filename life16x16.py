@@ -14,6 +14,7 @@
 from time import sleep
 from datetime import datetime
 from random import randrange
+from collections import deque
 
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_MCP3008
@@ -25,6 +26,8 @@ MAX_RATE        = 1.00  # slowest   "    "
 MIN_GENS        = 5     # minimum number of steps (generations)
 MAX_GENS        = 500   # maximum   "    "    "         "
 PERCENT_FILL    = 50    # universe fill factor
+MAX_HIST        = 5     # maximum history to track universe
+MAX_CYCLES      = 20    # maximum cycles for oscillators
 RATE_KNOB       = 0
 GEN_KNOB        = 1
 
@@ -38,6 +41,9 @@ m.clear()
 
 mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(0, 0))
 
+history = deque(maxlen=MAX_HIST)
+cycle_count = 0
+
 # create darkness
 U = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
 generation = 0
@@ -47,26 +53,41 @@ def getKnobs():
     return (mcp.read_adc(0),mcp.read_adc(1),mcp.read_adc(2))
 
 def readGenKnob():
+    """Return max generation value for current knob setting."""
     value = 1.0*mcp.read_adc(GEN_KNOB)
     return int(MIN_GENS + (value/1024.0)*(MAX_GENS-MIN_GENS))
 
 def readRateKnob():
+    """Return rate value for current knob setting."""
     value = 1.0*mcp.read_adc(RATE_KNOB)
     return MIN_RATE + (value/1024.0)*(MAX_RATE-MIN_RATE)
 
 def knobSleep():
+    """Sleep, but also check knob while doing so."""
     start_wait = datetime.now()
     while (datetime.now() - start_wait).total_seconds() < readRateKnob():
             pass
 
 def createWorld(fill):
     """Let there be light."""
-    global U, generation
+    global U, generation, cycle_count
     generation = 0
+    cycle_count = 0
+    history.clear()
     for i in xrange(int(0.01 * NX * NY * fill)):
         x = randrange(1,NX+1)
         y = randrange(1,NY+1)
         U[x][y] = 1
+        
+def getUniverseID():
+    """Return unique 2**256 bit integer value."""
+    N = 0;
+    ID = 0;
+    for x in xrange(NX):
+        for y in xrange(NY):
+            ID += U[x+1][y+1]*(2**N)
+            N += 1
+    return ID
 
 def displayUniverse():
     """Show it."""
@@ -103,25 +124,30 @@ def updateUniverse():
 
 # Bootstrap a new universe
 createWorld(PERCENT_FILL)
+history.append(getUniverseID())
 displayUniverse()
 knobSleep()
 
 while True:
-    # Update the universe per the rules of the game of life
-    U = updateUniverse()
-    
-    # Start over if universe is dead (no live cells)
-    if not sum(row.count(1) for row in U):
-        print "Universe died at generation {0}.".format(generation)
-        createWorld(PERCENT_FILL)
-        
     # Start over if max generations reached
     if generation >= readGenKnob():
         print "Universe lived long enough at generation {0}.".format(generation)
         createWorld(PERCENT_FILL)
-        
+
+    # Update the universe per the rules of the game of life
+    U = updateUniverse()
+    
+    # Check for still lifes and oscillators
+    ID = getUniverseID()
+    if history.count(ID):
+        cycle_count += 1
+        if (cycle_count > MAX_CYCLES):
+            print("Still life or oscillator at generation {0}.").format(generation)
+            createWorld(PERCENT_FILL)
+    history.append(ID)
+    
     # Display the current universe
     displayUniverse()
-    
+
     # Sleep
     knobSleep()
