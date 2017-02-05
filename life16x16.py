@@ -26,10 +26,11 @@ MAX_RATE        = 1.00  # slowest   "    "
 MIN_GENS        = 5     # minimum number of steps (generations)
 MAX_GENS        = 500   # maximum   "    "    "         "
 PERCENT_FILL    = 50    # universe fill factor
-MAX_HIST        = 5     # maximum history to track universe
+MAX_HIST        = 20    # maximum history to track universe
 MAX_CYCLES      = 20    # maximum cycles for oscillators
 RATE_KNOB       = 0
 GEN_KNOB        = 1
+ALLOW_INFINITE  = True  # if True, max gen = infinite
 
 NX = 16
 NY = 16
@@ -70,14 +71,12 @@ def knobSleep():
 
 def createWorld(fill):
     """Let there be light."""
-    global U, generation, cycle_count
-    generation = 0
-    cycle_count = 0
-    history.clear()
+    UU = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
     for i in xrange(int(0.01 * NX * NY * fill)):
         x = randrange(1,NX+1)
         y = randrange(1,NY+1)
-        U[x][y] = 1
+        UU[x][y] = 1
+    return UU
         
 def getUniverseID():
     """Return unique 2**256 bit integer value."""
@@ -122,17 +121,25 @@ def updateUniverse():
                     UU[x][y] = 1
     return UU
 
+def genesis():
+    global U, generation, cycle_count
+    history.clear()
+    generation = 1
+    cycle_count = 0
+    U = createWorld(PERCENT_FILL)
+    history.appendleft(getUniverseID())
+    displayUniverse()
+    knobSleep()
+
 # Bootstrap a new universe
-createWorld(PERCENT_FILL)
-history.append(getUniverseID())
-displayUniverse()
-knobSleep()
+genesis()
 
 while True:
     # Start over if max generations reached
-    if generation >= readGenKnob():
+    genKnob = readGenKnob()
+    if not(ALLOW_INFINITE and genKnob == MAX_GENS) and generation >= genKnob:
         print "Universe lived long enough at generation {0}.".format(generation)
-        createWorld(PERCENT_FILL)
+        genesis()
 
     # Update the universe per the rules of the game of life
     U = updateUniverse()
@@ -140,11 +147,22 @@ while True:
     # Check for still lifes and oscillators
     ID = getUniverseID()
     if history.count(ID):
+        # Let it repeat for a few cycles
         cycle_count += 1
         if (cycle_count > MAX_CYCLES):
-            print("Still life or oscillator at generation {0}.").format(generation)
-            createWorld(PERCENT_FILL)
-    history.append(ID)
+            # Count period of oscillator
+            p = 0
+            for h in history:
+                p += 1
+                if ID == h:
+                    break
+            print("Oscillator period {0} at generation {1}.").format(p,generation)
+            # Start over
+            genesis()
+            
+    # Update history after 1st gen
+    if generation != 1:
+        history.appendleft(ID)
     
     # Display the current universe
     displayUniverse()
