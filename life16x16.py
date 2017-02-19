@@ -15,6 +15,7 @@ from time import sleep
 from datetime import datetime
 from random import randrange
 from collections import deque
+import sqlite3
 
 from rpi_life_display import RpiLifeDisplay
 
@@ -28,6 +29,7 @@ MAX_CYCLES      = 20    # maximum cycles for oscillators
 RATE_KNOB       = 0
 GEN_KNOB        = 1
 ALLOW_INFINITE  = True  # if True, max gen = infinite
+SQLDB           = 'life_stats.db'
 
 NX = 16
 NY = 16
@@ -40,6 +42,7 @@ cycle_count = 0
 # create darkness
 U = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
 generation = 0
+startID = 0
 
 def readGenKnob():
     """Return max generation value for current knob setting."""
@@ -111,14 +114,22 @@ def updateUniverse():
 
 def genesis():
     """Biblical kind. Not Phil Collins prog-rock kind."""
-    global U, generation, cycle_count
+    global U, generation, cycle_count, startID
     history.clear()
     generation = 1
     cycle_count = 0
     U = createWorld(PERCENT_FILL)
+    startID = getUniverseID()
     history.appendleft(getUniverseID())
     displayUniverse()
     knobSleep()
+    
+def store_stats(gen, per):
+    conn = sqlite3.connect(SQLDB)
+    conn.execute('''INSERT INTO STATS (ID, GENERATIONS, PERIOD) VALUES (?, ?, ?)''',
+                 [sqlite3.Binary(str(startID)), gen, per])
+    conn.commit()
+    conn.close()
 
 # Bootstrap a new universe
 genesis()
@@ -147,6 +158,10 @@ while True:
                     if ID == h:
                         break
             print("Oscillator period {0} at generation {1}.").format(p,generation)
+            
+            # Store stats in database
+            store_stats(generation, p)
+            
             # Start over
             genesis()
             
