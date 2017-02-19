@@ -44,18 +44,18 @@ generation = 0
 def readGenKnob():
     """Return max generation value for current knob setting."""
     value = 1.0*lifeDisplay.read_adc(GEN_KNOB)
-    return int(MIN_GENS + (value/1024.0)*(MAX_GENS-MIN_GENS))
+    return int(MIN_GENS + (value/1023.0)*(MAX_GENS-MIN_GENS))
 
 def readRateKnob():
     """Return rate value for current knob setting."""
     value = 1.0*lifeDisplay.read_adc(RATE_KNOB)
-    return MIN_RATE + (value/1024.0)*(MAX_RATE-MIN_RATE)
+    return MIN_RATE + (value/1023.0)*(MAX_RATE-MIN_RATE)
 
 def knobSleep():
     """Sleep, but also check knob while doing so."""
     start_wait = datetime.now()
     while (datetime.now() - start_wait).total_seconds() < readRateKnob():
-            pass
+        pass  # the dutchie on the left hand side
 
 def createWorld(fill):
     """Let there be light."""
@@ -110,6 +110,7 @@ def updateUniverse():
     return UU
 
 def genesis():
+    """Biblical kind. Not Phil Collins prog-rock kind."""
     global U, generation, cycle_count
     history.clear()
     generation = 1
@@ -138,12 +139,13 @@ while True:
         # Let it repeat for a few cycles
         cycle_count += 1
         if (cycle_count > MAX_CYCLES):
-            # Count period of oscillator
             p = 0
-            for h in history:
-                p += 1
-                if ID == h:
-                    break
+            if ID != 0:
+                # Count period of oscillator                
+                for h in history:
+                    p += 1
+                    if ID == h:
+                        break
             print("Oscillator period {0} at generation {1}.").format(p,generation)
             # Start over
             genesis()
