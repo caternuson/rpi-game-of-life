@@ -16,10 +16,7 @@ from datetime import datetime
 from random import randrange
 from collections import deque
 
-import Adafruit_GPIO.SPI as SPI
-import Adafruit_MCP3008
-
-from Matrix16x16 import Matrix16x16 as M16
+from rpi_life_display import RpiLifeDisplay
 
 MIN_RATE        = 0.01  # fastest rate (secs)
 MAX_RATE        = 1.00  # slowest   "    "
@@ -35,12 +32,7 @@ ALLOW_INFINITE  = True  # if True, max gen = infinite
 NX = 16
 NY = 16
 
-m = M16()
-m.begin()
-m.set_brightness(15)
-m.clear()
-
-mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(0, 0))
+lifeDisplay = RpiLifeDisplay()
 
 history = deque(maxlen=MAX_HIST)
 cycle_count = 0
@@ -49,18 +41,14 @@ cycle_count = 0
 U = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
 generation = 0
 
-def getKnobs():
-    """Return the raw ADC values of the 3 knobs."""
-    return (mcp.read_adc(0),mcp.read_adc(1),mcp.read_adc(2))
-
 def readGenKnob():
     """Return max generation value for current knob setting."""
-    value = 1.0*mcp.read_adc(GEN_KNOB)
+    value = 1.0*lifeDisplay.read_adc(GEN_KNOB)
     return int(MIN_GENS + (value/1024.0)*(MAX_GENS-MIN_GENS))
 
 def readRateKnob():
     """Return rate value for current knob setting."""
-    value = 1.0*mcp.read_adc(RATE_KNOB)
+    value = 1.0*lifeDisplay.read_adc(RATE_KNOB)
     return MIN_RATE + (value/1024.0)*(MAX_RATE-MIN_RATE)
 
 def knobSleep():
@@ -90,11 +78,11 @@ def getUniverseID():
 
 def displayUniverse():
     """Show it."""
-    m.clear()
+    lifeDisplay.clear()
     for x in xrange(NX):
         for y in xrange(NY):
-            m.set_pixel(x, y, U[x+1][y+1])
-    m.write_display()
+            lifeDisplay.set_pixel(x, y, U[x+1][y+1])
+    lifeDisplay.write_display()
 
 def countNeighbors(x, y):
     """Return neighbor count."""
