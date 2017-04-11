@@ -160,7 +160,7 @@ while True:
             print("Oscillator period {0} at generation {1}.").format(p,generation)
             
             # Store stats in database
-            store_stats(generation, p)
+            #store_stats(generation, p)
             
             # Start over
             genesis()
