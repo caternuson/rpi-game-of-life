@@ -81,11 +81,14 @@ def getUniverseID():
 
 def displayUniverse():
     """Show it."""
-    lifeDisplay.clear()
-    for x in xrange(NX):
-        for y in xrange(NY):
-            lifeDisplay.set_pixel(x, y, U[x+1][y+1])
-    lifeDisplay.write_display()
+    try:
+        lifeDisplay.clear()
+        for x in xrange(NX):
+            for y in xrange(NY):
+                lifeDisplay.set_pixel(x, y, U[x+1][y+1])
+        lifeDisplay.write_display()
+    except IOError:
+        print "I2C comm barf. But life goes on!"
 
 def countNeighbors(x, y):
     """Return neighbor count."""
