@@ -15,7 +15,7 @@ from time import sleep
 from datetime import datetime
 from random import randrange
 from collections import deque
-import sqlite3
+#import sqlite3
 
 from rpi_life_display import RpiLifeDisplay
 
@@ -23,11 +23,14 @@ MIN_RATE        = 0.01  # fastest rate (secs)
 MAX_RATE        = 1.00  # slowest   "    "
 MIN_GENS        = 5     # minimum number of steps (generations)
 MAX_GENS        = 500   # maximum   "    "    "         "
+MIN_BRIGHTNESS  = 1     # minimum brightness setting
+MAX_BRIGHTNESS  = 15    # maximum    "          "
 PERCENT_FILL    = 50    # universe fill factor
 MAX_HIST        = 20    # maximum history to track universe
 MAX_CYCLES      = 20    # maximum cycles for oscillators
 RATE_KNOB       = 0
 GEN_KNOB        = 1
+BRIGHTNESS_KNOB = 2
 ALLOW_INFINITE  = True  # if True, max gen = infinite
 SQLDB           = 'life_stats.db'
 
@@ -53,6 +56,11 @@ def readRateKnob():
     """Return rate value for current knob setting."""
     value = 1.0*lifeDisplay.read_adc(RATE_KNOB)
     return MIN_RATE + (value/1023.0)*(MAX_RATE-MIN_RATE)
+
+def readBrightnessKnob():
+    """Return brightness value for current knob setting."""
+    value = 1.0*lifeDisplay.read_adc(BRIGHTNESS_KNOB)
+    return MIN_BRIGHTNESS + int(round((value/1023.0)*(MAX_BRIGHTNESS-MIN_BRIGHTNESS)))
 
 def knobSleep():
     """Sleep, but also check knob while doing so."""
@@ -82,6 +90,7 @@ def getUniverseID():
 def displayUniverse():
     """Show it."""
     try:
+        lifeDisplay.set_brightness(readBrightnessKnob())
         lifeDisplay.clear()
         for x in xrange(NX):
             for y in xrange(NY):
@@ -126,13 +135,15 @@ def genesis():
     history.appendleft(getUniverseID())
     displayUniverse()
     knobSleep()
-    
+
+"""    
 def store_stats(gen, per):
     conn = sqlite3.connect(SQLDB)
     conn.execute('''INSERT INTO STATS (ID, GENERATIONS, PERIOD) VALUES (?, ?, ?)''',
                  [sqlite3.Binary(str(startID)), gen, per])
     conn.commit()
     conn.close()
+"""
 
 # Bootstrap a new universe
 genesis()
