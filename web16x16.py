@@ -23,20 +23,42 @@ import json
 
 import tornado.httpserver
 import tornado.web
+import tornado.websocket
 
 import Matrix16x16
+import GOL
 
 ROOT_DIR = os.getcwd()
 PORT = 8080
 
 m = Matrix16x16.Matrix16x16()
+gol = GOL.GOL()
+someoneConnected = False
 
 class MainHandler(tornado.web.RequestHandler):
     """Handler for server root."""
    
     def get(self, ):
         print "Main handler."
-        self.render("web16x16.html")
+        if someoneConnected:
+            self.render("404.html")
+        else:
+            gol.pause()
+            self.render("web16x16.html")
+
+class WSCounterHandler(tornado.websocket.WebSocketHandler):
+    """Handle the websocket connection for monitoring user connectedness."""
+    
+    def open(self,):
+        """Callback for when websocket is opened."""
+        global someoneConnected
+        someoneConnected = True
+        
+    def on_close(self, ):
+        """Callback for when websocket is closed."""
+        global someoneConnected
+        someoneConnected = False
+        gol.restart()
         
 class AjaxClickHandler(tornado.web.RequestHandler):
     """Handle AJAX button clicks."""
@@ -65,6 +87,7 @@ class MainServerApp(tornado.web.Application):
         handlers = [
             (r"/",                  MainHandler),
             (r"/ajaxclick",         AjaxClickHandler),
+            (r"/ws_counter",        WSCounterHandler),
         ]
         
         settings = {
@@ -78,6 +101,11 @@ class MainServerApp(tornado.web.Application):
 # M A I N 
 #--------------------------------------------------------------------
 if __name__ == '__main__':
-    tornado.httpserver.HTTPServer(MainServerApp()).listen(PORT)
-    print "Server started on port {0}.".format(PORT)
-    tornado.ioloop.IOLoop.instance().start()
+    try:
+        gol.start()
+        tornado.httpserver.HTTPServer(MainServerApp()).listen(PORT)
+        print "Server started on port {0}.".format(PORT)
+        tornado.ioloop.IOLoop.instance().start()
+    except KeyboardInterrupt:
+        gol.stop()
+        gol.join()

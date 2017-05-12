@@ -315,6 +315,13 @@
     <button id="0xff" type="button" class="btn btn-default btn-xs">&nbsp</button>
   </div>
   <script>
+    var ws = new WebSocket("ws://"+location.host+"/ws_counter");
+    window.onclose = function() {
+      if (ws.readyState == WebSocket.OPEN) {
+        ws.close();
+      }
+    }
+    
     $(document).ready(function () {
       $(".btn").click(handle_click);
     });
