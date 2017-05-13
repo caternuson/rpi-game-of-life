@@ -23,7 +23,7 @@
     <button id="0x08" type="button" class="btn btn-default btn-xs">&nbsp</button>
     <button id="0x09" type="button" class="btn btn-default btn-xs">&nbsp</button>
     <button id="0x0a" type="button" class="btn btn-default btn-xs">&nbsp</button>
-    <button id="0x0b type="button" class="btn btn-default btn-xs">&nbsp</button>
+    <button id="0x0b" type="button" class="btn btn-default btn-xs">&nbsp</button>
     <button id="0x0c" type="button" class="btn btn-default btn-xs">&nbsp</button>
     <button id="0x0d" type="button" class="btn btn-default btn-xs">&nbsp</button>
     <button id="0x0e" type="button" class="btn btn-default btn-xs">&nbsp</button>
@@ -314,6 +314,7 @@
     <button id="0xfe" type="button" class="btn btn-default btn-xs">&nbsp</button>
     <button id="0xff" type="button" class="btn btn-default btn-xs">&nbsp</button>
   </div>
+  <p class="text-center"><button id="RUN" type="button" class="btn btn-success">RUN</button></p>
   <script>
     var ws = new WebSocket("ws://"+location.host+"/ws_counter");
     window.onclose = function() {
@@ -327,13 +328,56 @@
     });
     
     function handle_click(event) {
+      switch (event.target.id) {
+        case "RUN":
+          handle_run_button(event);
+          break;
+        default:
+          handle_display_button(event);
+
+      }
+    }
+    
+    function handle_run_button(event) {
+      var U = new Uint16Array(16);
+      for (row=0; row<16; row++) {
+        rowByte = 0;
+        for (col=0; col<16; col++) {
+          rowByte <<= 1;
+          id = "00"+(16*row+col).toString(16);
+          id = "0x" + id.slice(-2);
+          //console.log(id);
+          if (document.getElementById(id).classList.contains('btn-primary')) {
+            rowByte |= 0x01;
+          }
+        }
+        console.log(rowByte);
+        U[row] = rowByte;
+      }
+      
+      var json_data = JSON.stringify({
+        uni: U,
+      });
+    
+      $.ajax({
+        url: '/ajax_run',
+        method: 'POST',
+        data: json_data,
+        success: function(json_resp) {
+          resp = JSON.parse(json_resp);
+          // TODO: process return
+        }
+      });
+    }
+
+    function handle_display_button(event) {
       var json_data = JSON.stringify({
         id: event.target.id,
         state: event.target.classList.contains('btn-primary')
       });
-      
+    
       $.ajax({
-        url: '/ajaxclick',
+        url: '/ajax_display',
         method: 'POST',
         data: json_data,
         success: function(json_resp) {
@@ -346,6 +390,7 @@
         }
       });
     }
+
   </script>
 </body>
 </html>

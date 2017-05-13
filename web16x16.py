@@ -29,7 +29,7 @@ import Matrix16x16
 import GOL
 
 ROOT_DIR = os.getcwd()
-PORT = 8080
+PORT = 80
 
 m = Matrix16x16.Matrix16x16()
 gol = GOL.GOL()
@@ -60,8 +60,8 @@ class WSCounterHandler(tornado.websocket.WebSocketHandler):
         someoneConnected = False
         gol.restart()
         
-class AjaxClickHandler(tornado.web.RequestHandler):
-    """Handle AJAX button clicks."""
+class AjaxDisplayHandler(tornado.web.RequestHandler):
+    """Handle grid display button clicks."""
     
     def post(self, ):
         json_data = json.loads(self.request.body)
@@ -79,6 +79,22 @@ class AjaxClickHandler(tornado.web.RequestHandler):
         m.set_pixel(x,y, state)
         m.write_display()
         return state
+    
+class AjaxRunHandler(tornado.web.RequestHandler):
+    """Handle RUN button."""
+    
+    def post(self, ):
+        json_data = json.loads(self.request.body)
+        json_uni = json_data['uni']
+        U = [[0 for x in xrange(18)] for y in xrange(18)]
+        for y in xrange(16):
+            rowByte = json_uni['{0}'.format(y)]
+            for x in xrange(16):
+                U[1+15-x][1+y] = rowByte & 0x01
+                rowByte >>= 1
+        gol.runUniverse(U)
+        resp = {'':''}
+        self.write(json.dumps(resp))
 
 class MainServerApp(tornado.web.Application):
     """Main Server application."""
@@ -86,7 +102,8 @@ class MainServerApp(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r"/",                  MainHandler),
-            (r"/ajaxclick",         AjaxClickHandler),
+            (r"/ajax_display",      AjaxDisplayHandler),
+            (r"/ajax_run",          AjaxRunHandler),
             (r"/ws_counter",        WSCounterHandler),
         ]
         
@@ -107,5 +124,5 @@ if __name__ == '__main__':
         print "Server started on port {0}.".format(PORT)
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
-        gol.stop()
+        gol.kill()
         gol.join()

@@ -141,7 +141,6 @@ class GOL(threading.Thread):
 
     def genesis(self, uni=None):
         """Biblical kind. Not Phil Collins prog-rock kind."""
-        #global U, generation, cycle_count, startID
         self.history.clear()
         self.generation = 1
         self.cycle_count = 0
@@ -149,10 +148,7 @@ class GOL(threading.Thread):
             self.U = self.createWorld(PERCENT_FILL)
         else:
             self.U = uni
-        #self.startID = self.getUniverseID()
         self.history.appendleft(self.getUniverseID())
-        #self.displayUniverse()
-        #self.knobSleep()
         
     def pause(self, ):
         self.running = False
@@ -160,7 +156,7 @@ class GOL(threading.Thread):
     def restart(self, ):
         self.running = True
         
-    def stop(self, ):
+    def kill(self, ):
         self.threadAlive = False
         self.running = False
         
