@@ -1,5 +1,5 @@
 #===============================================================================
-# Matrix16x16.py
+# matrix16x16.py
 #
 # Class for interfacing to 16x16 LED matrix comprised of two Adafruit 8x16
 # LED matrices.

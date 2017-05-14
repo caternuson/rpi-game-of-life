@@ -18,7 +18,7 @@ from datetime import datetime
 from random import randrange
 from collections import deque
 
-from rpi_life_display import RpiLifeDisplay
+from lifedisplay import LifeDisplay
 
 MIN_RATE        = 0.01  # fastest rate (secs)
 MAX_RATE        = 1.00  # slowest   "    "
@@ -40,40 +40,41 @@ NY = 16
 class GOL(threading.Thread):
     """Thread class for running Conway's Game of Life."""
 
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None):
+    def __init__(self, uni=None, group=None, target=None, name=None, args=(), kwargs=None):
         threading.Thread.__init__(self, group=group, target=target, name=name)
 
-        self.display = RpiLifeDisplay()
+        self.display = LifeDisplay()
         self.history = deque(maxlen=MAX_HIST)
         self.max_cycles = MAX_CYCLES
         self.threadAlive = False
         self.running = False
         self.autoRestart = False
-        self.U = None
-        self.genesis()
+        if not uni==None:
+            self.U = uni
+        #self.genesis()
 
-    def readGenKnob(self, ):
+    def __read_gen_knob(self, ):
         """Return max generation value for current knob setting."""
         value = 1.0*self.display.read_adc(GEN_KNOB)
         return int(MIN_GENS + (value/1023.0)*(MAX_GENS-MIN_GENS))
 
-    def readRateKnob(self, ):
+    def __read_rate_knob(self, ):
         """Return rate value for current knob setting."""
         value = 1.0*self.display.read_adc(RATE_KNOB)
         return MIN_RATE + (value/1023.0)*(MAX_RATE-MIN_RATE)
 
-    def readBrightnessKnob(self, ):
+    def __read_brightness_knob(self, ):
         """Return brightness value for current knob setting."""
         value = 1.0*self.display.read_adc(BRIGHTNESS_KNOB)
         return MIN_BRIGHTNESS + int(round((value/1023.0)*(MAX_BRIGHTNESS-MIN_BRIGHTNESS)))
 
-    def knobSleep(self, ):
+    def __knob_sleep(self, ):
         """Sleep, but also check knob while doing so."""
         start_wait = datetime.now()
         while (datetime.now() - start_wait).total_seconds() < self.readRateKnob():
             pass  # the dutchie on the left hand side
 
-    def createWorld(self, fill):
+    def __create_world(self, fill):
         """Let there be light."""
         UU = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
         for i in xrange(int(0.01 * NX * NY * fill)):
@@ -82,7 +83,7 @@ class GOL(threading.Thread):
             UU[x][y] = 1
         return UU
         
-    def getUniverseID(self, ):
+    def __get_universe_id(self, ):
         """Return unique 2**256 bit integer value."""
         N = 0;
         ID = 0;
@@ -92,7 +93,7 @@ class GOL(threading.Thread):
                 N += 1
         return ID
 
-    def displayUniverse(self, ):
+    def __display_universe(self, ):
         """Show it."""
         try:
             self.display.set_brightness(self.readBrightnessKnob())
@@ -105,13 +106,13 @@ class GOL(threading.Thread):
             #print "I2C comm barf. But life goes on!"
             pass
 
-    def countNeighbors(self, x, y):
+    def __count_neighbors(self, x, y):
         """Return neighbor count."""
         return  self.U[x-1][y-1] + self.U[x][y-1] + self.U[x+1][y-1] + \
                 self.U[x-1][y]   +             self.U[x+1][y]   + \
                 self.U[x-1][y+1] + self.U[x][y+1] + self.U[x+1][y+1]
 
-    def updateUniverse(self, ):
+    def __update_universe(self, ):
         """Life goes on."""
         #global generation
         self.generation += 1
@@ -130,16 +131,7 @@ class GOL(threading.Thread):
                         UU[x][y] = 1
         return UU
       
-    def runUniverse(self, uni):
-        """Run provided 16x16 Universe."""
-        if not self.threadAlive:
-            return
-        if self.running:
-            self.running = False
-        self.genesis(uni)
-        self.running = True
-        
-    def addUniBorder(self, uni):
+    def __add_uni_border(self, uni):
         """Expand 16x16 uni to 18x18 by adding single border of cells."""
         UU = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
         for x in xrange(1,NX+1):
@@ -147,7 +139,7 @@ class GOL(threading.Thread):
                 UU[x][y] = uni[x-1][y-1]
         return UU
 
-    def genesis(self, uni=None):
+    def __genesis(self, uni=None):
         """Biblical kind. Not Phil Collins prog-rock kind."""
         self.history.clear()
         self.generation = 1
@@ -157,18 +149,31 @@ class GOL(threading.Thread):
         else:
             self.U = self.addUniBorder(uni)
         self.history.appendleft(self.getUniverseID())
-        
+
+    def set_universe(self, uni):
+        """Run provided 16x16 Universe."""
+        if not self.threadAlive:
+            return
+        if self.running:
+            self.running = False
+        self.genesis(uni)
+        self.running = True
+
     def pause(self, ):
+        """Pause thread main loop."""
         self.running = False
     
     def restart(self, ):
+        """Restart thread main loop."""
         self.running = True
         
     def kill(self, ):
+        """Kill thread."""
         self.threadAlive = False
         self.running = False
-        
+
     def run(self, ):
+        """Don't call directly. Called when thread is started."""
         self.threadAlive = True
         self.running = True
         

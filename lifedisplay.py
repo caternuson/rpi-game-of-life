@@ -18,14 +18,14 @@
 #===============================================================================
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_MCP3008
-import Matrix16x16
+import matrix16x16
 
-class RpiLifeDisplay():
+class LifeDisplay():
     """Class for interfacing to Raspberry Pi with 16x16 LED Matrix and
        ADC attached to potentiometers."""
     
     def __init__(self, brightness=15):
-        self.disp = Matrix16x16.Matrix16x16(brightness=brightness)
+        self.disp = matrix16x16.Matrix16x16(brightness=brightness)
         
         self.mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(0, 0))
 
