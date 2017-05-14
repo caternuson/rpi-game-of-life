@@ -35,6 +35,10 @@ m = Matrix16x16.Matrix16x16()
 gol = GOL.GOL()
 someoneConnected = False
 
+NX = 16
+NY = 16
+UU = [[0 for x in xrange(NX)] for y in xrange(NY)]
+
 class MainHandler(tornado.web.RequestHandler):
     """Handler for server root."""
    
@@ -64,11 +68,24 @@ class AjaxDisplayHandler(tornado.web.RequestHandler):
     """Handle grid display button clicks."""
     
     def post(self, ):
-        json_data = json.loads(self.request.body)
+        # OLD
+        #json_data = json.loads(self.request.body)
         #print("Button click handler: {0}".format(json_data))
-        state = self.__handleClick(json_data)
-        resp = {'state': state}
+        #state = self.__handleClick(json_data)
+        #resp = {'state': state}
+        """Receive button click ID. Toggle corresponding cell. Return modified universe."""
+        json_data = json.loads(self.request.body)
+        resp = {}
+        resp['uni'] = self.__toggleCell(json_data['id'])
+        resp = {}
         self.write(json.dumps(resp))
+        
+    def __toggleCell(self, cellID):
+        val = int(json_data['id'],0)
+        x = val % 16
+        y = val / 16
+        
+    
         
     def __handleClick(self, json_data):
         val = int(json_data['id'],0)

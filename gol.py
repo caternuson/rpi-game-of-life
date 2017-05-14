@@ -131,13 +131,21 @@ class GOL(threading.Thread):
         return UU
       
     def runUniverse(self, uni):
+        """Run provided 16x16 Universe."""
         if not self.threadAlive:
             return
         if self.running:
             self.running = False
         self.genesis(uni)
         self.running = True
-
+        
+    def addUniBorder(self, uni):
+        """Expand 16x16 uni to 18x18 by adding single border of cells."""
+        UU = [[0 for x in xrange(NX+2)] for y in xrange(NY+2)]
+        for x in xrange(1,NX+1):
+            for y in xrange(1,NY+1):
+                UU[x][y] = uni[x-1][y-1]
+        return UU
 
     def genesis(self, uni=None):
         """Biblical kind. Not Phil Collins prog-rock kind."""
@@ -147,7 +155,7 @@ class GOL(threading.Thread):
         if uni==None:
             self.U = self.createWorld(PERCENT_FILL)
         else:
-            self.U = uni
+            self.U = self.addUniBorder(uni)
         self.history.appendleft(self.getUniverseID())
         
     def pause(self, ):
